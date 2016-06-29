@@ -1,12 +1,8 @@
 package org.jboss.rhiot.scoreboard;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
+import java.util.Date;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 
@@ -30,16 +26,21 @@ public class CloudClient implements EdcCallbackHandler {
 
     private static final String ACCOUNT_NAME = "Red-Hat";
     private static final String ASSET_ID     = "RHIoTTag-scoreboard";
-    private static final String BROKER_URL   = "mqtt://broker-sandbox.everyware-cloud.com:1883";
+    //private static final String BROKER_URL   = "mqtt://broker-Red-Hat.everyware-cloud.com:1883/";
+    private static final String BROKER_URL   = "mqtt://broker-Red-Hat.everyware-cloud.com:1883/";
     private static final String USERNAME     = "s-stark";
-    //
-    private static final String GAME_TOPIC = "+/org.jboss.rhiot.services.RHIoTTagScanner/gameScores";
+    // subscript to all gameScore topics for all gateways
+    private static final String GAME_SCORES_TOPIC = "+/org.jboss.rhiot.services.RHIoTTagScanner/gameScores";
+    private static final String GAME_INFO_TOPIC = "+/org.jboss.rhiot.services.RHIoTTagScanner/gameInfo";
 
     private EdcCloudClient edcCloudClient;
-    /** Synchornization latch to allow client startup to wait for ack of topic subscriptions */
+    private ICloudListener listener;
+    /** Synchronization latch to allow client startup to wait for ack of topic subscriptions */
     private CountDownLatch subConfirmLatch;
 
-    public void start() throws Exception {
+    public void start(ICloudListener listener) throws Exception {
+        this.listener = listener;
+        // Get the password
         String password = System.getenv("PASSWORD");
         if(password == null) {
             // Look to local properties file
@@ -68,7 +69,7 @@ public class CloudClient implements EdcCallbackHandler {
         EdcDeviceProfileFactory profFactory = EdcDeviceProfileFactory.getInstance();
         EdcDeviceProfile prof = profFactory.newEdcDeviceProfile();
         prof.setDisplayName("RHIoTTag ScoreBoard");
-        prof.setModelName("Java Client");
+        prof.setModelName("Java8 Client");
 
         //set GPS position in device profile - this is sent only once, with the birth certificate
         prof.setLongitude(-122.4194);
@@ -83,12 +84,14 @@ public class CloudClient implements EdcCallbackHandler {
 
         //
         // Subscribe
-        subConfirmLatch = new CountDownLatch(2);
-        log.info("Subscribe to data topics under: "+ GAME_TOPIC);
-        int dataSubID = edcCloudClient.subscribe(GAME_TOPIC, "#", 1);
+        subConfirmLatch = new CountDownLatch(3);
+        log.info("Subscribe to game scores under: "+ GAME_SCORES_TOPIC);
+        int gameScoreID = edcCloudClient.subscribe(GAME_SCORES_TOPIC, "#", 1);
+        log.info("Subscribe to game info under: "+ GAME_INFO_TOPIC);
+        int gameInfoID = edcCloudClient.subscribe(GAME_INFO_TOPIC, "#", 1);
 
-        System.out.println("Subscribe to control topics of all assets in the account");
-        int controlSubID = edcCloudClient.controlSubscribe("+", "#", 1);
+        System.out.println("Subscribe to control topics of all Gateway assets in the account");
+        int controlSubID = edcCloudClient.controlSubscribe("DN2016GW+", "#", 1);
 
         // Wait until the subscriptions have been confirmed
         subConfirmLatch.await();
@@ -110,14 +113,35 @@ public class CloudClient implements EdcCallbackHandler {
 
     @Override
     public void publishArrived(String assetId, String topic, EdcPayload msg, int qos, boolean retain) {
-        log.info("publish:"+assetId+", topic="+topic);
+        log.debug("publish:"+assetId+", topic="+topic);
+        int gwIndex = assetId.indexOf("GW");
+        String gwNo = assetId.substring(gwIndex+2);
+        int gateway = Integer.parseInt(gwNo);
+
+        // Game scores
         if(msg.metrics().containsKey(IRHIoTTagScanner.GW_LAST_GAME_SCORE)) {
+            Date time = msg.getTimestamp();
             String name = (String) msg.getMetric(IRHIoTTagScanner.GW_LAST_GAME_TAG_NAME);
             int score = (int) msg.getMetric(IRHIoTTagScanner.GW_LAST_GAME_SCORE);
             int hits = (int) msg.getMetric(IRHIoTTagScanner.GW_LAST_GAME_SCORE_HITS);
             String tagAddress = (String) msg.getMetric(IRHIoTTagScanner.GW_LAST_GAME_SCORE_TAG_ADDRESS);
-            Boolean isNewHighScore = (Boolean) msg.getMetric(IRHIoTTagScanner.GW_LAST_GAME_NEW_HIGH_SCORE);
-            log.info(String.format("New game score: %s@%d, hits=%d, tag: %s, isNewHigh: %s@%s", name, score, hits, tagAddress, isNewHighScore, msg.getTimestamp()));
+            boolean isNewHighScore = (boolean) msg.getMetric(IRHIoTTagScanner.GW_LAST_GAME_NEW_HIGH_SCORE);
+            //log.info(String.format("New game score: %s@%d, hits=%d, tag: %s, isNewHigh: %s@%s", name, score, hits, tagAddress, isNewHighScore, msg.getTimestamp()));
+            // int gateway, String name, String address, int shootingTimeLeft, int shotsLeft, int gameScore, int gameTimeLeft
+            if(listener != null)
+                listener.endGame(time, gateway, name, tagAddress, hits, score, isNewHighScore);
+        }
+        // In progress game info
+        if(msg.metrics().containsKey(IRHIoTTagScanner.TAG_GAME_NAME)) {
+            Date time = msg.getTimestamp();
+            String name = (String) msg.getMetric(IRHIoTTagScanner.TAG_GAME_NAME);
+            int score = (int) msg.getMetric(IRHIoTTagScanner.TAG_GAME_SCORE);
+            int hits = (int) msg.getMetric(IRHIoTTagScanner.TAG_GAME_HITS);
+            String tagAddress = (String) msg.getMetric(IRHIoTTagScanner.TAG_GAME_ADDRESS);
+            int timeLeft = (int) msg.getMetric(IRHIoTTagScanner.TAG_GAME_TIME_LEFT);
+            int shootingTimeLeft = (int) msg.getMetric(IRHIoTTagScanner.TAG_SHOOTING_TIME_LEFT);
+            int shotsLeft = (int) msg.getMetric(IRHIoTTagScanner.TAG_SHOTS_LEFT);
+            listener.gameInfo(time, gateway, name, tagAddress, hits, score, shotsLeft, shootingTimeLeft, timeLeft);
         }
     }
 

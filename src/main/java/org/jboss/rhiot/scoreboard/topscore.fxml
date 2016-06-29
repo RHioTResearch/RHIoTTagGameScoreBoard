@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.text.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.effect.*?>
+<?import javafx.scene.image.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane maxHeight="400" maxWidth="400" minHeight="360" minWidth="360" prefHeight="365.0" prefWidth="365.0" styleClass="scorePane" stylesheets="@main.css" xmlns="http://javafx.com/javafx/8.0.40" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.jboss.rhiot.scoreboard.TopScoreController">
+   <children>
+      <ImageView fx:id="bannerView" fitHeight="360.0" fitWidth="360.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@/images/banner_gold.png" />
+         </image>
+      </ImageView>
+      <ImageView fitHeight="360.0" fitWidth="360.0" opacity="0.2" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@/images/rhiottag.png" />
+         </image>
+      </ImageView>
+      <Label fx:id="rankLabel" layoutX="288.0" layoutY="293.0" styleClass="rankLabel" text="10" AnchorPane.bottomAnchor="10.0" AnchorPane.rightAnchor="10.0" />
+      <Label fx:id="nameLabel" alignment="CENTER" layoutX="2.0" prefHeight="48.0" prefWidth="365.0" styleClass="nameLabel" text="Winner X TagName" textAlignment="JUSTIFY" wrapText="true" />
+      <Label fx:id="addrLabel" alignment="CENTER" contentDisplay="CENTER" layoutY="48.0" prefHeight="48.0" prefWidth="360.0" styleClass="addrLabel" text="00:01:02:03:04:05" textAlignment="CENTER" wrapText="true" />
+      <Label fx:id="scoreLabel" alignment="CENTER" layoutX="67.0" layoutY="166.0" prefHeight="88.0" styleClass="scoreLabel" text="100,000" AnchorPane.leftAnchor="67.0" />
+   </children>
+</AnchorPane>

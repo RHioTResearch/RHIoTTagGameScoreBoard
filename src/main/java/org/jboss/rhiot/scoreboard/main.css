@@ -1,0 +1,65 @@
+
+.scorePane {
+-fx-border-width: 4px;
+-fx-border-insets: 1px;
+-fx-border-color: red;
+-fx-border-radius: 20px;
+}
+
+.label.scoreLabel {
+-fx-font-weight: bold;
+-fx-font-family: "Courier";
+-fx-font-size: 64px;
+}
+
+.label.rankLabel {
+-fx-font-size: 48px;
+-fx-font-family: "Courier";
+-fx-font-weight: bold;
+}
+
+.label.nameLabel {
+-fx-font-size: 24px;
+-fx-font-weight: bold;
+}
+.label.addrLabel {
+-fx-font-size: 32px;
+-fx-font-weight: bold;
+-fx-font-family: "Courier";
+}
+
+.label {
+-fx-font-size: 24px;
+-fx-font-weight: bold;
+}
+
+.menu-bar .label {
+  -fx-font-size: 18px;
+  -fx-font-family: "Arial";
+}
+
+.table-view .label {
+  -fx-font-size: 18px;
+  -fx-font-family: "Arial";
+}
+.tab-pane > .tab-header-area {
+  -fx-font-size: 18px;
+  -fx-font-family: "Arial";
+  -fx-font-weight: bold;
+}
+
+.table-view {
+  -fx-background-image: url('/images/redhat.png');
+  -fx-background-size: stretch;
+//  -fx-opacity: 0.6;
+}
+
+.table-row-cell:even {
+   -fx-background-color: lightgrey;
+}
+
+.indexed-cell {
+-fx-font-family: "Courier";
+-fx-font-size: 24px;
+-fx-font-weight: bold;
+}
